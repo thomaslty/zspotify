@@ -4,6 +4,10 @@
 
 # ZSpotify
 
+### fixes
+Generate credentials.json
+https://github.com/kokarare1212/librespot-python/issues/277
+
 ### A Spotify downloader needing only a python interpreter and ffmpeg.
 
 <p align="center">
