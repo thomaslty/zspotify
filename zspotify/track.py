@@ -156,9 +156,8 @@ def perform_download(track_id: str, download_directory:str, filename: str, song_
         return False
 
     try:
-        track_id = TrackId.from_base62(track_id)
-        stream = ZSpotify.get_content_stream(
-            track_id, ZSpotify.DOWNLOAD_QUALITY)
+        track_id_encoded = TrackId.from_base62(track_id)
+        stream = ZSpotify.get_content_stream(track_id_encoded, ZSpotify.DOWNLOAD_QUALITY)
         create_download_directory(download_directory)
         total_size = stream.input_stream.size
         time_start = time.time()
@@ -187,8 +186,7 @@ def perform_download(track_id: str, download_directory:str, filename: str, song_
         return True
 
     except Exception as e:
-        print('###   SKIPPING:', song_name,
-              '(GENERAL DOWNLOAD ERROR)   ###')
+        print('###   RETRYING:', song_name, '(GENERAL DOWNLOAD ERROR)   ###')
         print(e)
         if os.path.exists(filename):
             os.remove(filename)
