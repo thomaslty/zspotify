@@ -10,7 +10,7 @@ from pydub import AudioSegment
 from tqdm import tqdm
 
 from const import TRACKS, ALBUM, NAME, ITEMS, DISC_NUMBER, TRACK_NUMBER, IS_PLAYABLE, ARTISTS, IMAGES, URL, \
-    RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, TRACK_STATS_URL, SPLIT_ALBUM_DISCS, ROOT_PATH, DOWNLOAD_FORMAT, \
+    RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, TRACK_STATS_URL, DOWNLOAD_FORMAT, \
     CHUNK_SIZE, SKIP_EXISTING_FILES, ANTI_BAN_WAIT_TIME, OVERRIDE_AUTO_WAIT, BITRATE, CODEC_MAP, EXT_MAP, \
     DOWNLOAD_REAL_TIME, DURATION_MS, SKIP_FILE_WITHOUT_ID
 from utils import fix_filename, set_audio_tags, set_music_thumbnail, create_download_directory, \
@@ -71,27 +71,20 @@ def get_song_duration(song_id: str) -> float:
     return duration
 
 # noinspection PyBroadException
-def download_track(track_id: str, extra_paths='', prefix=False, prefix_value='', disable_progressbar=False) -> None:
+def download_track(track_id: str, download_directory:str, prefix=False, prefix_value='', disable_progressbar=False) -> None:
     """ Downloads raw song audio from Spotify """
 
     try:
         (artists, album_name, name, image_url, release_year, disc_number,
          track_number, scraped_song_id, is_playable, duration_ms) = get_song_info(track_id)
 
-        if ZSpotify.get_config(SPLIT_ALBUM_DISCS):
-            download_directory = os.path.join(os.path.dirname(
-                __file__), ZSpotify.get_config(ROOT_PATH), extra_paths, f'Disc {disc_number}')
-        else:
-            download_directory = os.path.join(os.path.dirname(
-                __file__), ZSpotify.get_config(ROOT_PATH), extra_paths)
-
         song_name = fix_filename(artists[0]) + ' - ' + fix_filename(name)
         if prefix:
             song_name = f'{prefix_value.zfill(2)} - {song_name}' if prefix_value.isdigit(
             ) else f'{prefix_value} - {song_name}'
 
-        filename = os.path.join(
-            download_directory, f'{song_name}.{EXT_MAP.get(ZSpotify.get_config(DOWNLOAD_FORMAT).lower())}')
+        short_filename = f'{song_name}.{EXT_MAP.get(ZSpotify.get_config(DOWNLOAD_FORMAT).lower())}'
+        filename = os.path.join(download_directory, short_filename)
 
         check_name = os.path.isfile(filename) and os.path.getsize(filename)
         check_id = scraped_song_id in get_directory_song_ids(download_directory)
@@ -100,7 +93,7 @@ def download_track(track_id: str, extra_paths='', prefix=False, prefix_value='',
         if not check_id and check_name:
             # Two options: add id to the file and skip it, or download it under different filename
             if ZSpotify.get_config(SKIP_FILE_WITHOUT_ID):
-                add_to_directory_song_ids(download_directory, scraped_song_id)
+                add_to_directory_song_ids(download_directory, scraped_song_id, short_filename)
                 check_id = True
             else:
                 c = len([file for file in os.listdir(download_directory)
@@ -159,7 +152,7 @@ def download_track(track_id: str, extra_paths='', prefix=False, prefix_value='',
 
                     # add song id to download directory's .song_ids file
                     if not check_id:
-                        add_to_directory_song_ids(download_directory, scraped_song_id)
+                        add_to_directory_song_ids(download_directory, scraped_song_id, short_filename)
 
                     if not ZSpotify.get_config(OVERRIDE_AUTO_WAIT):
                         time.sleep(ZSpotify.get_config(ANTI_BAN_WAIT_TIME))

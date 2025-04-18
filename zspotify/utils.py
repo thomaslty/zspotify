@@ -28,26 +28,39 @@ def create_download_directory(download_path: str) -> None:
         with open(hidden_file_path, 'w', encoding='utf-8') as f:
             pass
 
-def get_directory_song_ids(download_path: str) -> List[str]:
-    """ Gets song ids of songs in directory """
+def get_directory_song_id_info(download_path: str, select_id: bool) -> List[str]:
+    """ Gets id or filename from song ids file directory """
 
-    song_ids = []
+    data = []
 
     hidden_file_path = os.path.join(download_path, '.song_ids')
     if os.path.isfile(hidden_file_path):
         with open(hidden_file_path, 'r', encoding='utf-8') as file:
-            song_ids.extend([line.strip() for line in file.readlines()])
+            # ',' is used as character to separate hash and filename because simplicity, but this character can be part
+            # of a song name, we select  only first match to avoid issues
+            if select_id:
+                data.extend([line.split(",", 1)[0].strip() for line in file.readlines()])
+            else:
+                data.extend([line.split(",", 1)[1].strip() for line in file.readlines()])
 
-    return song_ids
+    return data
 
-def add_to_directory_song_ids(download_path: str, song_id: str) -> None:
+def get_directory_song_ids(download_path: str) -> List[str]:
+    """ Gets song ids of songs in directory """
+    return get_directory_song_id_info(download_path, True)
+
+def get_directory_song_filenames(download_path: str) -> List[str]:
+    """ Gets song filenames in directory """
+    return get_directory_song_id_info(download_path, False)
+
+def add_to_directory_song_ids(download_path: str, song_id: str, short_filename : str) -> None:
     """ Appends song_id to .song_ids file in directory """
 
     hidden_file_path = os.path.join(download_path, '.song_ids')
     # not checking if file exists because we need an exception
     # to be raised if something is wrong
     with open(hidden_file_path, 'a', encoding='utf-8') as file:
-        file.write(f'{song_id}\n')
+        file.write(f'{song_id},{short_filename}\n')
 
 def get_downloaded_song_duration(filename: str) -> float:
     """ Returns the downloaded file's duration in seconds """

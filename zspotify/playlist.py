@@ -1,8 +1,10 @@
+import os
+
 from tqdm import tqdm
 
-from const import ITEMS, ID, TRACK, NAME, PREFIX
+from const import ITEMS, ID, TRACK, NAME, PREFIX, ROOT_PATH, SYNC_FILES_WITH_PLAYLIST
 from track import download_track
-from utils import fix_filename
+from utils import fix_filename, get_directory_song_filenames
 from zspotify import ZSpotify
 
 MY_PLAYLISTS_URL = 'https://api.spotify.com/v1/me/playlists'
@@ -53,11 +55,26 @@ def download_playlist(playlist):
     playlist_songs = [song for song in get_playlist_songs(playlist[ID]) if song[TRACK][ID]]
     p_bar = tqdm(playlist_songs, unit='song', total=len(playlist_songs), unit_scale=True)
     enum = 1
+
+    download_directory = os.path.join(os.path.dirname(__file__), ZSpotify.get_config(ROOT_PATH),
+                                      fix_filename(playlist[NAME].strip()) + '/')
     for song in p_bar:
-        download_track(song[TRACK][ID], fix_filename(playlist[NAME].strip()) + '/',
-                       prefix=ZSpotify.get_config(PREFIX), prefix_value=str(enum) ,disable_progressbar=True)
+        download_track(song[TRACK][ID], download_directory, prefix=ZSpotify.get_config(PREFIX),
+                       prefix_value=str(enum) ,disable_progressbar=True)
         p_bar.set_description(song[TRACK][NAME])
         enum += 1
+
+    # Remove files that are not part of the playlist
+    if ZSpotify.get_config(SYNC_FILES_WITH_PLAYLIST):
+        keep_files = get_directory_song_filenames(download_directory)
+        keep_files.append('.song_ids')
+
+        for filename in os.listdir(download_directory):
+            file_path = os.path.join(download_directory, filename)
+
+            if os.path.isfile(file_path) and filename not in keep_files:
+                print('\n###   DELETING:', filename, '(SONG NOT IN PLAYLIST)   ###')
+                os.remove(file_path)
 
 
 def download_from_user_playlist():
