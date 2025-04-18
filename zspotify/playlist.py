@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from const import ITEMS, ID, TRACK, NAME
+from const import ITEMS, ID, TRACK, NAME, PREFIX
 from track import download_track
 from utils import fix_filename
 from zspotify import ZSpotify
@@ -55,7 +55,7 @@ def download_playlist(playlist):
     enum = 1
     for song in p_bar:
         download_track(song[TRACK][ID], fix_filename(playlist[NAME].strip()) + '/',
-                       prefix=True, prefix_value=str(enum) ,disable_progressbar=True)
+                       prefix=ZSpotify.get_config(PREFIX), prefix_value=str(enum) ,disable_progressbar=True)
         p_bar.set_description(song[TRACK][NAME])
         enum += 1
 

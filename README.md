@@ -52,6 +52,8 @@ Options that can be configured in zs_config.json:
   ROOT_PODCAST_PATH   Change this path if you don't like the default directory where ZSpotify saves the podcasts
 
   SKIP_EXISTING_FILES Set this to false if you want ZSpotify to overwrite files with the same name rather than skipping the song
+  
+  PREFIX              Set this to true if you want ZSpotify to add prefix on song file when downloading playlist or album
 
   MUSIC_FORMAT        Can be "mp3" or "ogg", mp3 is required for track metadata however ogg is slightly higher quality as it is not transcoded.
 

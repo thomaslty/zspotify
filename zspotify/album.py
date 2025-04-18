@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from const import ITEMS, ARTISTS, NAME, ID
+from const import ITEMS, ARTISTS, NAME, ID, PREFIX
 from track import download_track
 from utils import fix_filename
 from zspotify import ZSpotify
@@ -52,7 +52,7 @@ def download_album(album):
     tracks = get_album_tracks(album)
     for n, track in tqdm(enumerate(tracks, start=1), unit_scale=True, unit='Song', total=len(tracks)):
         download_track(track[ID], f'{artist_fixed}/{album_name_fixed}',
-                       prefix=True, prefix_value=str(n), disable_progressbar=True)
+                       prefix=ZSpotify.get_config(PREFIX), prefix_value=str(n), disable_progressbar=True)
 
 
 def download_artist_albums(artist):
