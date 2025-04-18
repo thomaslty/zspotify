@@ -4,7 +4,7 @@ import re
 import subprocess
 import time
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import music_tag
 import requests
@@ -17,6 +17,10 @@ class MusicFormat(str, Enum):
     MP3 = 'mp3',
     OGG = 'ogg',
 
+class SongIdFields(Enum):
+    ID = 0
+    FILENAME = 1
+    ALL = 2
 
 def create_download_directory(download_path: str) -> None:
     """ Create directory and add a hidden file with song ids """
@@ -28,26 +32,69 @@ def create_download_directory(download_path: str) -> None:
         with open(hidden_file_path, 'w', encoding='utf-8') as f:
             pass
 
-def get_directory_song_ids(download_path: str) -> List[str]:
-    """ Gets song ids of songs in directory """
+def get_directory_song_id_info(download_path: str, fields: SongIdFields) -> List[str] | Dict[str, str]:
+    """ Gets fields from song ids file directory """
 
-    song_ids = []
+    if fields == SongIdFields.ALL:
+        data = {}
+    else:
+        data = []
 
     hidden_file_path = os.path.join(download_path, '.song_ids')
     if os.path.isfile(hidden_file_path):
         with open(hidden_file_path, 'r', encoding='utf-8') as file:
-            song_ids.extend([line.strip() for line in file.readlines()])
+            # ',' is used as character to separate hash and filename because simplicity, but this character can be part
+            # of a song name, we select  only first match to avoid issues
+            if fields == fields.ID:
+                data = [line.split(",", 1)[0].strip() for line in file.readlines()]
+            elif fields == fields.FILENAME:
+                data = [line.split(",", 1)[1].strip() for line in file.readlines()]
+            else:
+                data = {line.split(",", 1)[0].strip(): line.split(",", 1)[1].strip() for line in file.readlines()}
 
-    return song_ids
+    return data
 
-def add_to_directory_song_ids(download_path: str, song_id: str) -> None:
+def get_directory_song_ids(download_path: str) -> List[str]:
+    """ Gets song ids of songs in directory """
+    return get_directory_song_id_info(download_path, SongIdFields.ID)
+
+def get_directory_song_filenames(download_path: str) -> List[str]:
+    """ Gets song filenames in directory """
+    return get_directory_song_id_info(download_path, SongIdFields.FILENAME)
+
+def get_other_directory_songs_info(root_path: str, download_path_to_exclude: str) -> Dict[str, Dict[str,str]]:
+    """ Gets all song id data from other paths"""
+
+    data = {}
+
+    for root, dirs, files in os.walk(root_path):
+        for d in dirs:
+            complete_path = os.path.join(root_path, d)
+            if complete_path != download_path_to_exclude:
+                data[d] = get_directory_song_id_info(complete_path, SongIdFields.ALL)
+    return data
+
+def add_to_directory_song_ids(download_path: str, song_id: str, short_filename : str) -> None:
     """ Appends song_id to .song_ids file in directory """
 
     hidden_file_path = os.path.join(download_path, '.song_ids')
     # not checking if file exists because we need an exception
     # to be raised if something is wrong
     with open(hidden_file_path, 'a', encoding='utf-8') as file:
-        file.write(f'{song_id}\n')
+        file.write(f'{song_id},{short_filename}\n')
+
+def purge_songs_id(download_path: str, song_ids: List[str]):
+    """ Remove lines in .song_ids file if they aren't part of song_ids fetched from playlist """
+    hidden_file_path = os.path.join(download_path, '.song_ids')
+    hidden_file_path_tmp = os.path.join(download_path, '.song_ids_tmp')
+
+    with open(hidden_file_path, 'r', encoding='utf-8') as fin, \
+            open(hidden_file_path_tmp, 'w', encoding='utf-8') as fout:
+        for line in fin:
+            if line.split(",", 1)[0].strip() in song_ids:
+                fout.write(line)
+
+    os.replace(hidden_file_path_tmp, hidden_file_path)
 
 def get_downloaded_song_duration(filename: str) -> float:
     """ Returns the downloaded file's duration in seconds """
