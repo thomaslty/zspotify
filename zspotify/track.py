@@ -71,7 +71,7 @@ def get_song_duration(song_id: str) -> float:
     return duration
 
 # noinspection PyBroadException
-def download_track(track_id: str, download_directory:str, prefix=False, prefix_value='', disable_progressbar=False) -> None:
+def download_track(track_id: str, download_directory:str, prefix=False, prefix_value='', disable_progressbar=False) -> str|None:
     """ Downloads raw song audio from Spotify """
 
     try:
@@ -156,6 +156,8 @@ def download_track(track_id: str, download_directory:str, prefix=False, prefix_v
 
                     if not ZSpotify.get_config(OVERRIDE_AUTO_WAIT):
                         time.sleep(ZSpotify.get_config(ANTI_BAN_WAIT_TIME))
+
+                return scraped_song_id
         except Exception as e:
             print('###   SKIPPING:', song_name,
                   '(GENERAL DOWNLOAD ERROR)   ###')

@@ -62,6 +62,19 @@ def add_to_directory_song_ids(download_path: str, song_id: str, short_filename :
     with open(hidden_file_path, 'a', encoding='utf-8') as file:
         file.write(f'{song_id},{short_filename}\n')
 
+def purge_songs_id(download_path: str, song_ids: List[str]):
+    """ Remove lines in .song_ids file if they aren't part of song_ids fetched from playlist """
+    hidden_file_path = os.path.join(download_path, '.song_ids')
+    hidden_file_path_tmp = os.path.join(download_path, '.song_ids_tmp')
+
+    with open(hidden_file_path, 'r', encoding='utf-8') as fin, \
+            open(hidden_file_path_tmp, 'w', encoding='utf-8') as fout:
+        for line in fin:
+            if line.split(",", 1)[0].strip() in song_ids:
+                fout.write(line)
+
+    os.replace(hidden_file_path_tmp, hidden_file_path)
+
 def get_downloaded_song_duration(filename: str) -> float:
     """ Returns the downloaded file's duration in seconds """
 
