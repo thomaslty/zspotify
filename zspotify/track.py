@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import time
 from typing import Any, Tuple, List
 
@@ -12,9 +13,9 @@ from tqdm import tqdm
 from const import TRACKS, ALBUM, NAME, ITEMS, DISC_NUMBER, TRACK_NUMBER, IS_PLAYABLE, ARTISTS, IMAGES, URL, \
     RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, TRACK_STATS_URL, DOWNLOAD_FORMAT, \
     CHUNK_SIZE, SKIP_EXISTING_FILES, ANTI_BAN_WAIT_TIME, OVERRIDE_AUTO_WAIT, BITRATE, CODEC_MAP, EXT_MAP, \
-    DOWNLOAD_REAL_TIME, DURATION_MS, SKIP_FILE_WITHOUT_ID, GENERAL_ERROR_RETRIES
+    DOWNLOAD_REAL_TIME, DURATION_MS, SKIP_FILE_WITHOUT_ID, GENERAL_ERROR_RETRIES, ROOT_PATH
 from utils import fix_filename, set_audio_tags, set_music_thumbnail, create_download_directory, \
-    get_directory_song_ids, add_to_directory_song_ids
+    get_directory_song_ids, add_to_directory_song_ids, get_other_directory_songs_info
 from zspotify import ZSpotify
 
 
@@ -90,8 +91,23 @@ def download_track(track_id: str, download_directory:str, prefix=False, prefix_v
         check_name = os.path.isfile(filename) and os.path.getsize(filename)
         check_id = scraped_song_id in get_directory_song_ids(download_directory)
 
-        # a song with the same name is installed
-        if not check_id and check_name:
+        resolved_by_copy = False
+
+        if ZSpotify.get_config(SKIP_EXISTING_FILES) and not check_name and not check_id:
+            # Look if we have this song in another folder
+            data_other_folders = get_other_directory_songs_info(ZSpotify.get_config(ROOT_PATH),download_directory)
+
+            for folder, song_id_info in data_other_folders.items():
+                if scraped_song_id in song_id_info:
+                    # If we have it, copy it and stop further process
+                    source_file = os.path.join(ZSpotify.get_config(ROOT_PATH),folder, song_id_info[scraped_song_id])
+                    shutil.copy2(source_file, filename)
+                    print('\n###   SKIPPING:', song_name, '(SONG COPIED FROM OTHER FOLDER)   ###')
+                    resolved_by_copy = True
+                    break
+
+        # a song with the same name is installed but not present on id file
+        if not resolved_by_copy and not check_id and check_name:
             # Two options: add id to the file and skip it, or download it under different filename
             if ZSpotify.get_config(SKIP_FILE_WITHOUT_ID):
                 add_to_directory_song_ids(download_directory, scraped_song_id, short_filename)
