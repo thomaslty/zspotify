@@ -61,6 +61,7 @@ Options that can be configured in zs_config.json:
   FORCE_PREMIUM             Set this to true if ZSpotify isn't automatically detecting that you are using a premium account
 
   ANTI_BAN_WAIT_TIME        Change this setting if the time waited between bulk downloads is too high or low
+  GENERAL_ERROR_RETRIES     Integer with the number of retries to do when suffering general error on song download
   OVERRIDE_AUTO_WAIT        Change this to true if you want to completely disable the wait between songs for faster downloads with the risk of instability
   
   SYNC_FILES_WITH_PLAYLIST  Enable this option if you want to remove songs that are not part of your playlist anymore
